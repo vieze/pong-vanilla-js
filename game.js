@@ -30,11 +30,13 @@ let batSizeY = 12;
 let batColor = "#FFFFFF";
 let bat1PositionX = 1;
 let bat1PositionY = Math.round((gridSizeY - batSizeY * .5) * .5);
-let bat1movingUp = false
+let bat1movingUp = false;
 let bat1movingDown = false;
 
 let bat2PositionX = gridSizeX - 2;
 let bat2PositionY = Math.round((gridSizeY - batSizeY * .5) * .5);
+let bat2movingUp = false
+let bat2movingDown = false;
 
 let scoreLeft = 0;
 let scoreRight = 0;
@@ -42,6 +44,8 @@ let player1Text = "Player 1";
 let player2Text = "Player 2";
 
 let gameOver = false;
+
+let isPaused = false;
 
 //RENDER FUNCTIONS
 
@@ -67,7 +71,7 @@ function drawScore() {
     context.fillStyle = "#FFFFFF";
     context.fillText(scoreLeft + " - " + scoreRight, gridSizeX * .5, 10);
 
-    if(gameOver) {
+    if (gameOver) {
         context.fillText("GG", gridSizeX * .5, 20);
     }
 }
@@ -77,7 +81,7 @@ function drawScore() {
  */
 function drawGame() {
     //draw the background
-    drawRectangle(0,0,width,height, backgroundColor);
+    drawRectangle(0, 0, width, height, backgroundColor);
 
     //draw player 1
     drawRectangle(bat1PositionX, bat1PositionY, batSizeX, batSizeY, batColor);
@@ -92,6 +96,10 @@ function drawGame() {
     drawScore();
 }
 
+function generateRandomValueBetween(min, max) {
+    return Math.round(Math.random() * (max - min))
+}
+
 
 
 
@@ -100,24 +108,24 @@ function drawGame() {
  * Restarts the game
  */
 function restart() {
-    setTimeout(function() {
+    setTimeout(function () {
         //change game over to false
         gameOver = false;
-        
+
         //reset all the positions
         ballPositionX = Math.round(gridSizeX * .5);
         ballPositionY = Math.round(gridSizeY * .5);
         bat1PositionX = 1;
         bat1PositionY = Math.round((gridSizeY - batSizeY * .5) * .5);
-        
+
         bat2PositionX = gridSizeX - 2;
         bat2PositionY = Math.round((gridSizeY - batSizeY * .5) * .5);
 
-        //@TODO: give the ball a random direction, by creating the 
+        //@TODO6: give the ball a random direction, by creating the 
         //       generateRandomValueBetween function and ucommenting
         //       the assignment calls made below
-        // ballSpeedX = generateRandomValueBetween(-40,40);
-        // ballSpeedY = generateRandomValueBetween(-20,20);
+        ballSpeedX = generateRandomValueBetween(-40, 40);
+        ballSpeedY = generateRandomValueBetween(-20, 20);
 
     }, 1000);
 }
@@ -128,12 +136,15 @@ let now = performance.now();
 
 //update is called every frame
 function update() {
-
     //calculate the time difference (deltaTime) with last frame
     now = performance.now();
     deltaTime = (now - lastTime) * .001;
     lastTime = now;
-
+    if(isPaused) {
+        window.requestAnimationFrame(update);
+        return;
+    }
+        
     //move ball
     ballPositionX = ballPositionX + ballSpeedX * deltaTime;
     ballPositionY = ballPositionY + ballSpeedY * deltaTime;
@@ -143,10 +154,10 @@ function update() {
     let roundedBallPositionY = Math.round(ballPositionY);
 
     //check for ball colission with player 1
-    if(roundedBallPositionX === bat1PositionX) { //check if the ballposition is the same as the players x position
-        if(
+    if (roundedBallPositionX === bat1PositionX) { //check if the ballposition is the same as the players x position
+        if (
             roundedBallPositionY >= bat1PositionY && //the rounded ballPosition is greater or equal to the position of the bat
-            roundedBallPositionY < bat1PositionY + batSizeY //the roudned ballPosition is smaller than the batPosition plus its size
+            roundedBallPositionY < bat1PositionY + batSizeY //the rounded ballPosition is smaller than the batPosition plus its size
             //if both statements are true we are connecting vertically with the bat
         ) {
             //ball collided with player so we reverse it's xSpeed so we have a "bounce"
@@ -154,29 +165,52 @@ function update() {
         }
     }
 
-    //@TODO: check for ball colission with player 2
+    //check for ball colission with player 2
+    if (roundedBallPositionX === bat2PositionX) { //check if the ballposition is the same as the players x position
+        if (
+            roundedBallPositionY >= bat2PositionY && //the rounded ballPosition is greater or equal to the position of the bat
+            roundedBallPositionY < bat2PositionY + batSizeY //the rounded ballPosition is smaller than the batPosition plus its size
+            //if both statements are true we are connecting vertically with the bat
+        ) {
+            //ball collided with player so we reverse it's xSpeed so we have a "bounce"
+            ballSpeedX = ballSpeedX * -1;
+        }
+    }
 
-    //@TODO: check for ball with top and bottom boundary colission
-
+    //check for ball with top and bottom boundary colission
+    if (roundedBallPositionY < 0) {
+        ballSpeedY = ballSpeedY * -1;
+    }
+    if (roundedBallPositionY > 80) {
+        ballSpeedY = ballSpeedY * -1;
+    }
     //check if the ball is passed the left boundary
-    if(roundedBallPositionX < 0 && !gameOver) {
+    if (roundedBallPositionX < 0 && !gameOver) {
         gameOver = true;
         scoreRight++;
         restart();
     }
-    
-    //@TODO: check if the ball is passed the right boundary
-        // -> Restart the game if the boundaries are hit and update the scoreLeft or scoreRight
 
+    //check if the ball is passed the right boundary
+    // -> Restart the game if the boundaries are hit and update the scoreLeft or scoreRight
+    if (roundedBallPositionX > 128 && !gameOver) {
+        gameOver = true;
+        scoreLeft++;
+        restart();
+    }
     //move player 1 up or down
-    if(bat1movingUp) {
+    if (bat1movingUp) {
         bat1PositionY = bat1PositionY - batSpeedY * deltaTime;
     } else if (bat1movingDown) {
-        bat1PositionY = bat1PositionY + batSpeedY * deltaTime; 
+        bat1PositionY = bat1PositionY + batSpeedY * deltaTime;
     }
 
-    //@TODO: move player 2 up an down
-
+    // move player 2 up an down
+    if (bat2movingUp) {
+        bat2PositionY = bat2PositionY - batSpeedY * deltaTime;
+    } else if (bat2movingDown) {
+        bat2PositionY = bat2PositionY + batSpeedY * deltaTime;
+    }
     //call the drawGame functions so that we actually draw the game after all variable changes inside the gameloop are done
     drawGame();
 
@@ -189,32 +223,47 @@ window.requestAnimationFrame(update);
 
 //INPUT HANDLING
 
-//listen for player 1 input
-document.addEventListener('keydown', function(e){
-    switch(e.key) {
+document.addEventListener('keydown', function (e) {
+    console.log(e.key);
+    switch (e.key) {
+        //listen for player 1 input
         case "w":
             bat1movingUp = true;
             break;
         case "s":
             bat1movingDown = true;
             break;
+        //player 2 input
+        case "ArrowUp":
+            bat2movingUp = true;
+            break;
+        case "ArrowDown":
+            bat2movingDown = true;
+            break;
+        case "Pause":
+            isPaused = !isPaused            
+            context.fillText("PAUSED".split('').join(' '), gridSizeX * .5, 20);                                         
     }
 });
 
-document.addEventListener('keyup', function(e){
-    switch(e.key) {
+document.addEventListener('keyup', function (e) {
+    switch (e.key) {
         case "w":
             bat1movingUp = false;
             break;
         case "s":
             bat1movingDown = false;
             break;
+        case "ArrowUp":
+            bat2movingUp = false;
+            break;
+        case "ArrowDown":
+            bat2movingDown = false;
+            break;
     }
 });
+//@TODO7: add graphical enhancement to the game
 
-//player 2 input
-//@TODO: listen for player 2 input
+//@TODO8: add an interesting mechanic to the game CHECK
 
-//@TODO: add graphical enhancement to the game
-
-//@TODO: add an interesting mechanic to the game
+//TODO9: Tim special: refactor to use classes
